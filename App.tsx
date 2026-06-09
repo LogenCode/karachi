@@ -28,7 +28,7 @@ export default function App() {
   const [currUser, setCurrUser] = useState<User | null>(null);
   const [chatInput, setChatInput] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]); // Khali array
   const [usernameInput, setUsernameInput] = useState('');
   
   const messageEndRef = useRef<HTMLDivElement>(null);
@@ -54,10 +54,7 @@ export default function App() {
     channelRef.current = pusherRef.current.subscribe('private-karachi-room');
 
     channelRef.current.bind('client-new-message', (data: Message) => {
-      setMessages((prev) => {
-        if (prev.some((m) => m.id === data.id)) return prev;
-        return [...prev, data];
-      });
+      setMessages((prev) => [...prev, data]);
     });
 
     return () => {
@@ -102,12 +99,7 @@ export default function App() {
 
     setMessages(prev => [...prev, newMsg]);
     setChatInput('');
-
-    try {
-      channelRef.current.trigger('client-new-message', newMsg);
-    } catch (err) {
-      console.error(err);
-    }
+    channelRef.current.trigger('client-new-message', newMsg);
   };
 
   const handleLogout = () => {
@@ -118,126 +110,50 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans select-none antialiased">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       {!token ? (
-        <div className="flex-grow flex flex-col items-center justify-center p-6 bg-slate-950">
-          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
-            <div className="text-center space-y-2">
-              <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-center mx-auto text-emerald-400 font-black text-xl">PK</div>
-              <h1 className="text-xl font-black text-slate-100">Karachi Public Chat</h1>
-              <p className="text-xs text-slate-400">Saddar, Clifton, Gulshan, Nazimabad — Connect Safely!</p>
-            </div>
-
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Username</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Enter username (e.g. Anas)"
-                  value={usernameInput}
-                  onChange={(e) => setUsernameInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-200 focus:outline-none"
-                />
-              </div>
-              <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black py-3 rounded-xl text-xs transition duration-200 cursor-pointer">
-                Enter Karachi Public Chat →
-              </button>
-            </form>
-          </div>
+        <div className="flex-grow flex items-center justify-center p-6">
+          <form onSubmit={handleLoginSubmit} className="w-full max-w-sm bg-slate-900 p-6 rounded-2xl border border-slate-800">
+            <h1 className="text-xl font-black mb-4">Karachi Public Chat</h1>
+            <input
+              type="text"
+              placeholder="Enter username"
+              value={usernameInput}
+              onChange={(e) => setUsernameInput(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 mb-4 text-xs"
+            />
+            <button type="submit" className="w-full bg-emerald-500 py-3 rounded-xl text-xs font-bold text-slate-950">Enter</button>
+          </form>
         </div>
       ) : (
-        <div className="flex-grow flex overflow-hidden h-[100vh]">
-          <aside className={`w-80 border-r border-slate-900 bg-slate-950 flex flex-col z-40 transition-transform duration-300 md:relative md:translate-x-0 ${sidebarOpen ? 'translate-x-0 absolute inset-0' : '-translate-x-full absolute inset-y-0 left-0'}`}>
-            <div className="p-5 border-b border-slate-900 flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold">K</div>
-                <div>
-                  <h2 className="text-sm font-black text-slate-100">Karachi Chat</h2>
-                  <span className="text-[9px] text-emerald-400 font-bold block">REAL-TIME PUSHER MODE</span>
-                </div>
-              </div>
-              <button onClick={() => setSidebarOpen(false)} className="p-1 hover:bg-slate-900 rounded md:hidden"><X className="w-5 h-5" /></button>
-            </div>
-
-            <div className="p-3 border-b border-slate-900">
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  readOnly
-                  placeholder="Network Lobby Active..."
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-400 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <nav className="flex-1 overflow-y-auto p-4 space-y-6">
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase block px-2"> Lobbies</span>
-                <button type="button" className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center gap-2 bg-emerald-500/10 text-emerald-400 font-bold">
-                  <span>#</span> Karachiites Main Lounge 
-                </button>
-              </div>
-            </nav>
-
-            <div className="p-4 border-t border-slate-900 bg-slate-950 flex items-center justify-between">
-              <div className="flex items-center space-x-2.5 truncate">
-                <img src={currUser?.avatar || ''} className="w-8 h-8 rounded-xl border border-slate-800" alt="avatar" />
-                <div className="truncate">
-                  <h4 className="text-xs font-bold text-slate-200 truncate">{currUser?.username}</h4>
-                  <span className="text-[9px] text-emerald-400 block font-mono">LIVE CONNECTED</span>
-                </div>
-              </div>
-              <button onClick={handleLogout} className="p-1.5 hover:bg-slate-900 rounded-xl text-slate-400 hover:text-rose-400"><LogOut className="w-4 h-4" /></button>
-            </div>
-          </aside>
-
-          <main className="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden">
-            <header className="bg-slate-950 border-b border-slate-900 px-5 py-4 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <button onClick={() => setSidebarOpen(true)} className="p-1 hover:bg-slate-900 border border-slate-800 rounded md:hidden"><Menu className="w-5 h-5" /></button>
-                <h2 className="text-sm font-black text-slate-100">Karachiites Lounge </h2>
-              </div>
-              <div className="flex items-center space-x-1 px-3 py-1 bg-slate-900 border border-slate-800 rounded-full font-mono text-[9px] text-slate-400">
-                <MapPin className="w-3 h-3 text-emerald-400" />
-                <span>Pusher Cloud</span>
-              </div>
+        <div className="flex-grow flex h-screen overflow-hidden">
+          <main className="flex-1 flex flex-col h-full bg-slate-950">
+            <header className="border-b border-slate-900 p-4 flex justify-between items-center">
+              <h2 className="text-sm font-bold">Karachiites Lounge</h2>
+              <button onClick={handleLogout} className="text-rose-400 text-xs font-bold">Logout</button>
             </header>
-
+            
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
-              {messages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center">
-                  <p className="text-xs text-slate-500 max-w-xs">No dummy messages. Send a message to start real transmission!</p>
+              {messages.map((m) => (
+                <div key={m.id} className={`flex ${m.senderId === currUser?.id ? 'justify-end' : ''}`}>
+                  <div className={`p-3 rounded-2xl max-w-xs text-xs ${m.senderId === currUser?.id ? 'bg-emerald-500 text-slate-950' : 'bg-slate-900'}`}>
+                    <div className="font-bold mb-0.5">{m.senderName}</div>
+                    <div>{m.message}</div>
+                  </div>
                 </div>
-              ) : (
-                messages.map((m) => {
-                  const isMe = m.senderId === currUser?.id;
-                  return (
-                    <div key={m.id} className={`flex items-start gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
-                      <img src={m.senderAvatar} className="w-8 h-8 rounded-xl" alt="src" />
-                      <div className={`p-3 rounded-2xl text-xs max-w-md ${isMe ? 'bg-emerald-500 text-slate-950 rounded-tr-none font-bold' : 'bg-slate-900 text-slate-200 rounded-tl-none border border-slate-850'}`}>
-                        <div className="text-[10px] font-black opacity-80 block mb-1">{m.senderName}</div>
-                        <p className="break-words">{m.message}</p>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+              ))}
               <div ref={messageEndRef} />
             </div>
 
-            <form onSubmit={handleSendMessage} className="p-4 bg-slate-950 border-t border-slate-900 flex items-center space-x-2">
+            <form onSubmit={handleSendMessage} className="p-4 border-t border-slate-900 flex gap-2">
               <input
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Type your real-time message here..."
-                className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/40"
+                placeholder="Type a message..."
+                className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs"
               />
-              <button type="submit" className="p-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 rounded-xl transition">
-                <Send className="w-4 h-4" />
-              </button>
+              <button type="submit" className="bg-emerald-500 p-3 rounded-xl"><Send className="w-4 h-4 text-slate-950" /></button>
             </form>
           </main>
         </div>
