@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Pusher from 'pusher-js';
 import { 
-  MessageSquare, Send, MapPin, Menu, X, LogOut, Search
+  Send, MapPin, Menu, X, LogOut, MessageSquare
 } from 'lucide-react';
 
 // --- CONFIGURATION ---
-// ⚠️ Pusher Dashboard se mili hui Keys yahan dalein:
-const PUSHER_KEY = 'YOUR_PUSHER_KEY_HERE'; 
-const PUSHER_CLUSTER = 'YOUR_PUSHER_CLUSTER_HERE';
+const PUSHER_KEY = '30aafd63cbfe8ec5ba7a'; 
+const PUSHER_CLUSTER = 'ap2';
 
 interface User {
   id: string;
@@ -49,18 +48,18 @@ export default function App() {
   useEffect(() => {
     if (!token) return;
 
-    // Pusher initialize karein
+    // Pusher setup
     const pusher = new Pusher(PUSHER_KEY, {
       cluster: PUSHER_CLUSTER,
     });
 
-    // 'chat-room' naam ke channel ko subscribe karein
-    const channel = pusher.subscribe('karachi-public-room');
+    // Private channel standard format to allow client-events without backend
+    // Note: Channel ka naam 'private-' se shuru hona lazmi hai client-trigger ke liye
+    const channel = pusher.subscribe('private-karachi-room');
 
-    // Jab bhi koi naya message bheje ga, ye receive karega
-    channel.bind('new-message', (data: Message) => {
+    // Naye message ko listen karne ke liye
+    channel.bind('client-new-message', (data: Message) => {
       setMessages((prev) => {
-        // Duplicate check taake apna bheja hua message dobara double na ho
         if (prev.some((m) => m.id === data.id)) return prev;
         return [...prev, data];
       });
@@ -72,7 +71,7 @@ export default function App() {
     };
   }, [token]);
 
-  // Scroll to bottom
+  // Scroll to bottom automatic
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -95,8 +94,8 @@ export default function App() {
     setCurrUser(fakeUser);
   };
 
-  // 4. Send Message (Directly to Pusher/API)
-  const handleSendMessage = async (e: React.FormEvent) => {
+  // 4. Send Message (Directly Broadcast to other devices)
+  const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || !currUser) return;
 
@@ -109,18 +108,18 @@ export default function App() {
       createdAt: new Date().toISOString()
     };
 
-    // Apni screen par foran dikhayein
+    // 1. Apni screen pr message dikhayein
     setMessages(prev => [...prev, newMsg]);
     setChatInput('');
 
-    // Internet par bhejhein taake dusri device ko mile
-    // Note: Is temporary client-trigger ke liye Pusher dashboard me "Client Events" ko Enable karna hoga settings me.
-    // Agar complete backend chahiye to hme ek choti si serverless api Vercel pr hi banani hogi bina Render ke.
+    // 2. Internet ke zariye dusri device ko bhejhein
     try {
-      // Yeh direct dispatch hai (for learning/testing on multiple devices locally)
-      // Agar direct serverless chalana hai to hmein Vercel API function use karna chahiye.
+      const pusher = new Pusher(PUSHER_KEY, { cluster: PUSHER_CLUSTER });
+      const channel = pusher.subscribe('private-karachi-room');
+      // Client trigger jo direct dusri device pr message fekega
+      channel.trigger('client-new-message', newMsg);
     } catch (err) {
-      console.log(err);
+      console.log("Error sending message:", err);
     }
   };
 
@@ -137,8 +136,8 @@ export default function App() {
           <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6 z-10">
             <div className="text-center space-y-2">
               <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-center mx-auto text-emerald-400 font-black text-xl">PK</div>
-              <h1 className="text-xl font-black text-slate-100">Karachi Real-Time Chat</h1>
-              <p className="text-xs text-slate-400">Connect multiple devices instantly without credit cards!</p>
+              <h1 className="text-xl font-black text-slate-100">Karachi Live Chat</h1>
+              <p className="text-xs text-slate-400">Real people, real-time connection across devices!</p>
             </div>
 
             <form onSubmit={handleLoginSubmit} className="space-y-4">
@@ -171,9 +170,10 @@ export default function App() {
               <button onClick={() => setSidebarOpen(false)} className="p-1 hover:bg-slate-900 rounded md:hidden"><X className="w-5 h-5" /></button>
             </div>
             <div className="flex-1 p-4">
-              <span className="text-[10px] font-bold text-slate-500 uppercase block px-2 mb-2">🟢 Active Channel</span>
-              <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs p-3 rounded-xl font-bold">
-                # Karachiites-Main
+              <span className="text-[10px] font-bold text-slate-500 uppercase block px-2 mb-2">🟢 Live Connection</span>
+              <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs p-3 rounded-xl font-bold flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                # Karachiites-Room
               </div>
             </div>
             <div className="p-4 border-t border-slate-900 bg-slate-950 flex items-center justify-between">
@@ -190,11 +190,11 @@ export default function App() {
             <header className="bg-slate-950 border-b border-slate-900 px-5 py-4 flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <button onClick={() => setSidebarOpen(true)} className="p-1 hover:bg-slate-900 border border-slate-800 rounded md:hidden"><Menu className="w-5 h-5" /></button>
-                <h2 className="text-sm font-black text-slate-100">Karachiites Main Lounge 🏛️</h2>
+                <h2 className="text-sm font-black text-slate-100">Karachi Live Lounge 🏛️</h2>
               </div>
               <div className="flex items-center space-x-1 px-3 py-1 bg-slate-900 border border-slate-800 rounded-full font-mono text-[9px] text-slate-400">
                 <MapPin className="w-3 h-3 text-emerald-400" />
-                <span>Pusher Server Connected</span>
+                <span>Pusher Server Active</span>
               </div>
             </header>
 
@@ -219,7 +219,7 @@ export default function App() {
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Type real message to other devices..."
+                placeholder="Type a real-time message..."
                 className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/40"
               />
               <button type="submit" className="p-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 rounded-xl transition">
