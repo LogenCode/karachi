@@ -1,10 +1,10 @@
-// db.ts - Saaf aur Fresh Version
 import fs from 'fs';
 import path from 'path';
 import { User, Room, Message, Report, BanRecord, AppStats } from './types';
 
 const STORE_PATH = path.join(process.cwd(), 'karachi-db.json');
 
+// Interface definition zaroori hai
 interface Schema {
   users: User[];
   rooms: Room[];
@@ -17,10 +17,8 @@ interface Schema {
 function getInitialDB(): Schema {
   return {
     users: [],
-    rooms: [
-      { id: 'general', name: 'Karachi Public Room 🏛️🇵🇰', type: 'public', participants: [] }
-    ],
-    messages: [], // Yahan khali array rakhein taake purane bots load na hon
+    rooms: [{ id: 'general', name: 'Karachi Public Room 🏛️🇵🇰', type: 'public', participants: [] }],
+    messages: [], 
     reports: [],
     bans: [],
     blockedPairs: []
@@ -31,19 +29,15 @@ class MicroDatabase {
   private cache: Schema;
 
   constructor() {
-    // Agar file maujood hai to use load karein, warna initial data
     this.cache = this.load();
-    this.save(); 
+    this.save();
   }
 
   private load(): Schema {
     try {
       if (fs.existsSync(STORE_PATH)) {
         const fileContent = fs.readFileSync(STORE_PATH, 'utf8');
-        const db = JSON.parse(fileContent);
-        // Forcefully empty messages if you want to wipe bots every restart
-        db.messages = []; 
-        return db;
+        return JSON.parse(fileContent);
       }
     } catch (e) {
       console.error('Error loading DB', e);
@@ -59,11 +53,8 @@ class MicroDatabase {
     }
   }
 
-  // ... (Baaki saare methods wahi rahenge jo aapne pehle likhe the)
-  public getMessages(): Message[] {
-    return this.cache.messages;
-  }
-
+  // Basic methods jo build ke liye zaroori hain
+  public getMessages(): Message[] { return this.cache.messages; }
   public addMessage(msg: Message): void {
     this.cache.messages.push(msg);
     this.save();
