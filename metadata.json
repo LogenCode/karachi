@@ -1,0 +1,6 @@
+{
+  "name": "Karachi Public Chat",
+  "description": "A premium production-ready real-time text chat platform inspired by Omegle, localized for Karachi, featuring verified chat lobbies, randomized stranger pools, direct messaging, and robust administrative tools.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
