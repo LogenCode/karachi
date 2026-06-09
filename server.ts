@@ -5,8 +5,8 @@ import path from 'path';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { createServer as createViteServer } from 'vite';
-import { db } from './src/db';
-import { User, Message, Room, Report, ActiveSession } from './src/types';
+import { db } from './db';
+import { User, Message, Room, Report, ActiveSession } from './types';
 
 const PORT = 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'karachi_buland_parvaz_secure_jwt_token_2026';
