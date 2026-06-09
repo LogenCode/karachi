@@ -5,11 +5,11 @@ import {
   Smile, Image as ImageIcon, MapPin, Radio, Shield, HelpCircle, ChevronRight, Menu, X, Bell, Trash2, Heart, Search
 } from 'lucide-react';
 
-import { KarachiGateway } from './components/KarachiGateway';
-import { AuthModal } from './components/AuthModal';
-import { StrangerTab } from './components/StrangerTab';
-import { AdminDashboard } from './components/AdminDashboard';
-import { ProfileSettings } from './components/ProfileSettings';
+import { KarachiGateway } from './KarachiGateway';
+import { AuthModal } from './AuthModal';
+import { StrangerTab } from './StrangerTab';
+import { AdminDashboard } from './AdminDashboard';
+import { ProfileSettings } from './ProfileSettings';
 import { User, Room, Message } from './types';
 
 export default function App() {
