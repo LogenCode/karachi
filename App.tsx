@@ -5,7 +5,6 @@ import {
   MapPin, Radio, Shield, HelpCircle, ChevronRight, Menu, X, Bell, Search
 } from 'lucide-react';
 
-// --- CONFIGURATION ---
 const PUSHER_KEY = '30aafd63cbfe8ec5ba7a'; 
 const PUSHER_CLUSTER = 'ap2';
 
@@ -25,10 +24,8 @@ interface Message {
 }
 
 export default function App() {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('khi_chat_token'));
+  const [token, setToken] = useState<string | null>(null);
   const [currUser, setCurrUser] = useState<User | null>(null);
-
-  // Layout states
   const [chatInput, setChatInput] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -38,15 +35,15 @@ export default function App() {
   const pusherRef = useRef<Pusher | null>(null);
   const channelRef = useRef<any>(null);
 
-  // Load User session
   useEffect(() => {
+    const savedToken = localStorage.getItem('khi_chat_token');
     const savedUser = localStorage.getItem('khi_chat_user');
-    if (savedUser && token) {
+    if (savedToken && savedUser) {
+      setToken(savedToken);
       setCurrUser(JSON.parse(savedUser));
     }
-  }, [token]);
+  }, []);
 
-  // Real-Time Pusher Setup (No bots, pure live synchronization)
   useEffect(() => {
     if (!token || !currUser) return;
 
@@ -54,10 +51,8 @@ export default function App() {
       cluster: PUSHER_CLUSTER,
     });
 
-    // Client event ke liye 'private-' lazmi hai prefix
     channelRef.current = pusherRef.current.subscribe('private-karachi-room');
 
-    // Live message receive karna dusri device se
     channelRef.current.bind('client-new-message', (data: Message) => {
       setMessages((prev) => {
         if (prev.some((m) => m.id === data.id)) return prev;
@@ -125,9 +120,8 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans select-none antialiased">
       {!token ? (
-        /* DESIGN 1: POORA PURANA LOGIN LOOK */
-        <div className="flex-grow flex flex-col items-center justify-center p-6 bg-slate-950 relative overflow-hidden">
-          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6 z-10">
+        <div className="flex-grow flex flex-col items-center justify-center p-6 bg-slate-950">
+          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
             <div className="text-center space-y-2">
               <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-center mx-auto text-emerald-400 font-black text-xl">PK</div>
               <h1 className="text-xl font-black text-slate-100">Karachi Public Chat</h1>
@@ -153,7 +147,6 @@ export default function App() {
           </div>
         </div>
       ) : (
-        /* DESIGN 2: BADA VIP DASHBOARD LAYOUT (Bina bots ke) */
         <div className="flex-grow flex overflow-hidden h-[100vh]">
           <aside className={`w-80 border-r border-slate-900 bg-slate-950 flex flex-col z-40 transition-transform duration-300 md:relative md:translate-x-0 ${sidebarOpen ? 'translate-x-0 absolute inset-0' : '-translate-x-full absolute inset-y-0 left-0'}`}>
             <div className="p-5 border-b border-slate-900 flex items-center justify-between">
@@ -181,16 +174,16 @@ export default function App() {
 
             <nav className="flex-1 overflow-y-auto p-4 space-y-6">
               <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase block px-2">🏛️ Lobbies</span>
-                <button className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center gap-2 bg-emerald-500/10 text-emerald-400 font-bold">
-                  <span>#</span> Karachiites Main Lounge 🏛️
+                <span className="text-[10px] font-bold text-slate-500 uppercase block px-2"> Lobbies</span>
+                <button type="button" className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center gap-2 bg-emerald-500/10 text-emerald-400 font-bold">
+                  <span>#</span> Karachiites Main Lounge 
                 </button>
               </div>
             </nav>
 
             <div className="p-4 border-t border-slate-900 bg-slate-950 flex items-center justify-between">
               <div className="flex items-center space-x-2.5 truncate">
-                <img src={currUser?.avatar} className="w-8 h-8 rounded-xl border border-slate-800" alt="avatar" />
+                <img src={currUser?.avatar || ''} className="w-8 h-8 rounded-xl border border-slate-800" alt="avatar" />
                 <div className="truncate">
                   <h4 className="text-xs font-bold text-slate-200 truncate">{currUser?.username}</h4>
                   <span className="text-[9px] text-emerald-400 block font-mono">LIVE CONNECTED</span>
@@ -204,7 +197,7 @@ export default function App() {
             <header className="bg-slate-950 border-b border-slate-900 px-5 py-4 flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <button onClick={() => setSidebarOpen(true)} className="p-1 hover:bg-slate-900 border border-slate-800 rounded md:hidden"><Menu className="w-5 h-5" /></button>
-                <h2 className="text-sm font-black text-slate-100">Karachiites Lounge 🏛️</h2>
+                <h2 className="text-sm font-black text-slate-100">Karachiites Lounge </h2>
               </div>
               <div className="flex items-center space-x-1 px-3 py-1 bg-slate-900 border border-slate-800 rounded-full font-mono text-[9px] text-slate-400">
                 <MapPin className="w-3 h-3 text-emerald-400" />
