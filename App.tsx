@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Pusher from 'pusher-js';
-import { Send, MapPin, LogOut } from 'lucide-react';
+import { 
+  Users, MessageSquare, Shuffle, Settings, LogOut, Send, 
+  MapPin, Radio, Shield, HelpCircle, ChevronRight, Menu, X, Bell, Search
+} from 'lucide-react';
 
-// --- PUSHER KEYS ---
+// --- CONFIGURATION ---
 const PUSHER_KEY = '30aafd63cbfe8ec5ba7a'; 
 const PUSHER_CLUSTER = 'ap2';
 
@@ -24,14 +27,18 @@ interface Message {
 export default function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('khi_chat_token'));
   const [currUser, setCurrUser] = useState<User | null>(null);
+
+  // Layout states
   const [chatInput, setChatInput] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [usernameInput, setUsernameInput] = useState('');
+  
   const messageEndRef = useRef<HTMLDivElement>(null);
   const pusherRef = useRef<Pusher | null>(null);
   const channelRef = useRef<any>(null);
 
-  // 1. User session check
+  // Load User session
   useEffect(() => {
     const savedUser = localStorage.getItem('khi_chat_user');
     if (savedUser && token) {
@@ -39,20 +46,18 @@ export default function App() {
     }
   }, [token]);
 
-  // 2. Pusher Connection (Bina kisi bot ke, sirf real-time listen karega)
+  // Real-Time Pusher Setup (No bots, pure live synchronization)
   useEffect(() => {
     if (!token || !currUser) return;
 
-    // Connection initialize karein
     pusherRef.current = new Pusher(PUSHER_KEY, {
       cluster: PUSHER_CLUSTER,
-      userAuthentication: { endpoint: "", transport: "ajax" }, // Direct client messaging setup
     });
 
-    // Channel subscribe karein (Pusher me direct connection ke liye name 'private-' se start hona zaroori hai)
+    // Client event ke liye 'private-' lazmi hai prefix
     channelRef.current = pusherRef.current.subscribe('private-karachi-room');
 
-    // Jab dusri device message bheje to receive ho
+    // Live message receive karna dusri device se
     channelRef.current.bind('client-new-message', (data: Message) => {
       setMessages((prev) => {
         if (prev.some((m) => m.id === data.id)) return prev;
@@ -61,21 +66,15 @@ export default function App() {
     });
 
     return () => {
-      if (channelRef.current) {
-        channelRef.current.unbind_all();
-      }
-      if (pusherRef.current) {
-        pusherRef.current.disconnect();
-      }
+      if (channelRef.current) channelRef.current.unbind_all();
+      if (pusherRef.current) pusherRef.current.disconnect();
     };
   }, [token, currUser]);
 
-  // Scroll to bottom
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // 3. Login User
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!usernameInput.trim()) return;
@@ -93,7 +92,6 @@ export default function App() {
     setCurrUser(userObj);
   };
 
-  // 4. Send Real Message to Other Device
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || !currUser || !channelRef.current) return;
@@ -107,15 +105,13 @@ export default function App() {
       createdAt: new Date().toISOString()
     };
 
-    // Apni screen par message dikhayein
-    setMessages((prev) => [...prev, newMsg]);
+    setMessages(prev => [...prev, newMsg]);
     setChatInput('');
 
-    // Dusri device par internet ke zariye direct bhejhein
     try {
       channelRef.current.trigger('client-new-message', newMsg);
     } catch (err) {
-      console.error("Pusher trigger error:", err);
+      console.error(err);
     }
   };
 
@@ -129,82 +125,105 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans select-none antialiased">
       {!token ? (
-        /* LOGIN SCREEN */
-        <div className="flex-grow flex flex-col items-center justify-center p-6 bg-slate-950">
-          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
+        /* DESIGN 1: POORA PURANA LOGIN LOOK */
+        <div className="flex-grow flex flex-col items-center justify-center p-6 bg-slate-950 relative overflow-hidden">
+          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6 z-10">
             <div className="text-center space-y-2">
               <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-center mx-auto text-emerald-400 font-black text-xl">PK</div>
-              <h1 className="text-xl font-black text-slate-100">Karachi Real Chat Room</h1>
-              <p className="text-xs text-slate-400">No Bots. Pure Real-Time Peer Connection.</p>
+              <h1 className="text-xl font-black text-slate-100">Karachi Public Chat</h1>
+              <p className="text-xs text-slate-400">Saddar, Clifton, Gulshan, Nazimabad — Connect Safely!</p>
             </div>
 
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Enter Your Name</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Username</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Anas, Zain, Ali..."
+                  placeholder="Enter username (e.g. Anas)"
                   value={usernameInput}
                   onChange={(e) => setUsernameInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/40"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-200 focus:outline-none"
                 />
               </div>
-              <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black py-3 rounded-xl text-xs transition cursor-pointer">
-                Start Real Chat →
+              <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black py-3 rounded-xl text-xs transition duration-200 cursor-pointer">
+                Enter Karachi Public Chat →
               </button>
             </form>
           </div>
         </div>
       ) : (
-        /* CLEAN CHAT ROOM WORKSPACE */
-        <div className="flex-grow flex h-[100vh] overflow-hidden">
-          {/* LEFT SIDE PANEL (Bots removed completely) */}
-          <aside className="w-64 border-r border-slate-900 bg-slate-950 flex flex-col hidden md:flex">
-            <div className="p-5 border-b border-slate-900 flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold">K</div>
-              <h2 className="text-sm font-black text-slate-100">Karachi Chat</h2>
-            </div>
-            <div className="flex-1 p-4">
-              <span className="text-[10px] font-bold text-slate-500 uppercase block mb-2">🟢 Connection Status</span>
-              <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs p-3 rounded-xl font-bold flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                Direct Live Link Active
+        /* DESIGN 2: BADA VIP DASHBOARD LAYOUT (Bina bots ke) */
+        <div className="flex-grow flex overflow-hidden h-[100vh]">
+          <aside className={`w-80 border-r border-slate-900 bg-slate-950 flex flex-col z-40 transition-transform duration-300 md:relative md:translate-x-0 ${sidebarOpen ? 'translate-x-0 absolute inset-0' : '-translate-x-full absolute inset-y-0 left-0'}`}>
+            <div className="p-5 border-b border-slate-900 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold">K</div>
+                <div>
+                  <h2 className="text-sm font-black text-slate-100">Karachi Chat</h2>
+                  <span className="text-[9px] text-emerald-400 font-bold block">REAL-TIME PUSHER MODE</span>
+                </div>
               </div>
-              <p className="text-[11px] text-slate-500 mt-3 px-1">Open this link on another device to test real conversation.</p>
+              <button onClick={() => setSidebarOpen(false)} className="p-1 hover:bg-slate-900 rounded md:hidden"><X className="w-5 h-5" /></button>
             </div>
+
+            <div className="p-3 border-b border-slate-900">
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  readOnly
+                  placeholder="Network Lobby Active..."
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-400 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <nav className="flex-1 overflow-y-auto p-4 space-y-6">
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-slate-500 uppercase block px-2">🏛️ Lobbies</span>
+                <button className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center gap-2 bg-emerald-500/10 text-emerald-400 font-bold">
+                  <span>#</span> Karachiites Main Lounge 🏛️
+                </button>
+              </div>
+            </nav>
+
             <div className="p-4 border-t border-slate-900 bg-slate-950 flex items-center justify-between">
               <div className="flex items-center space-x-2.5 truncate">
                 <img src={currUser?.avatar} className="w-8 h-8 rounded-xl border border-slate-800" alt="avatar" />
-                <h4 className="text-xs font-bold text-slate-200 truncate">{currUser?.username}</h4>
+                <div className="truncate">
+                  <h4 className="text-xs font-bold text-slate-200 truncate">{currUser?.username}</h4>
+                  <span className="text-[9px] text-emerald-400 block font-mono">LIVE CONNECTED</span>
+                </div>
               </div>
               <button onClick={handleLogout} className="p-1.5 hover:bg-slate-900 rounded-xl text-slate-400 hover:text-rose-400"><LogOut className="w-4 h-4" /></button>
             </div>
           </aside>
 
-          {/* MAIN CHAT SCREEN */}
           <main className="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden">
             <header className="bg-slate-950 border-b border-slate-900 px-5 py-4 flex items-center justify-between">
-              <h2 className="text-sm font-black text-slate-100">Live Main Lounge 🏛️</h2>
+              <div className="flex items-center space-x-3">
+                <button onClick={() => setSidebarOpen(true)} className="p-1 hover:bg-slate-900 border border-slate-800 rounded md:hidden"><Menu className="w-5 h-5" /></button>
+                <h2 className="text-sm font-black text-slate-100">Karachiites Lounge 🏛️</h2>
+              </div>
               <div className="flex items-center space-x-1 px-3 py-1 bg-slate-900 border border-slate-800 rounded-full font-mono text-[9px] text-slate-400">
                 <MapPin className="w-3 h-3 text-emerald-400" />
-                <span>Pusher Network</span>
+                <span>Pusher Cloud</span>
               </div>
             </header>
 
-            {/* MESSAGES VIEW */}
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {messages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center p-6">
-                  <p className="text-xs text-slate-500 max-w-xs">Room is empty. Send a message or open this URL on your mobile to connect instantly!</p>
+                <div className="h-full flex flex-col items-center justify-center text-center">
+                  <p className="text-xs text-slate-500 max-w-xs">No dummy messages. Send a message to start real transmission!</p>
                 </div>
               ) : (
                 messages.map((m) => {
                   const isMe = m.senderId === currUser?.id;
                   return (
                     <div key={m.id} className={`flex items-start gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
-                      <img src={m.senderAvatar} className="w-8 h-8 rounded-xl" alt="avatar" />
-                      <div className={`p-3 rounded-2xl text-xs max-w-md ${isMe ? 'bg-emerald-500 text-slate-950 rounded-tr-none font-medium' : 'bg-slate-900 text-slate-200 rounded-tl-none border border-slate-850'}`}>
+                      <img src={m.senderAvatar} className="w-8 h-8 rounded-xl" alt="src" />
+                      <div className={`p-3 rounded-2xl text-xs max-w-md ${isMe ? 'bg-emerald-500 text-slate-950 rounded-tr-none font-bold' : 'bg-slate-900 text-slate-200 rounded-tl-none border border-slate-850'}`}>
                         <div className="text-[10px] font-black opacity-80 block mb-1">{m.senderName}</div>
                         <p className="break-words">{m.message}</p>
                       </div>
@@ -215,13 +234,12 @@ export default function App() {
               <div ref={messageEndRef} />
             </div>
 
-            {/* INPUT FIELD */}
             <form onSubmit={handleSendMessage} className="p-4 bg-slate-950 border-t border-slate-900 flex items-center space-x-2">
               <input
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Write your real-time message..."
+                placeholder="Type your real-time message here..."
                 className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/40"
               />
               <button type="submit" className="p-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 rounded-xl transition">
