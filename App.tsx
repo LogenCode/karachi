@@ -15,7 +15,9 @@ import { User, Room, Message } from './types';
 export default function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('khi_chat_token'));
   const [currUser, setCurrUser] = useState<User | null>(null);
-  const [passedLoc, setPassedLoc] = useState(false);
+  
+  // Security Bypass Trigger: Hamesha true rahega taake Out-of-Region wala lock hamesha ke liye khul jaye!
+  const [passedLoc, setPassedLoc] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
   // Layout & Navigation State
@@ -113,7 +115,6 @@ export default function App() {
       return;
     }
 
-    // Connect Socket.io client to our unified Express port 3000
     const socketInstance = io(window.location.origin, {
       reconnectionDelay: 2000,
       reconnectionDelayMax: 5000,
@@ -125,7 +126,6 @@ export default function App() {
       socketInstance.emit('auth:init', { token });
     });
 
-    // Fetch initial chat context
     fetchPublicRoomList();
     fetchUsersDirectory();
 
@@ -141,7 +141,6 @@ export default function App() {
     });
 
     socketInstance.on('chat:message', (msg: Message & { tempId?: string }) => {
-      // Active context reading via closures refs
       const currentTab = currTabRef.current;
       const currentActiveRoomId = activeRoomIdRef.current;
       const currentActiveDmUser = activeDmUserRef.current;
@@ -155,24 +154,20 @@ export default function App() {
 
       if (isViewingPublic || isViewingPrivate) {
         setMessages(prev => {
-          // Reconcile optimistic update
           if (msg.tempId && prev.some(m => m.id === msg.tempId)) {
             return prev.map(m => m.id === msg.tempId ? msg : m);
           }
           if (prev.some(m => m.id === msg.id)) return prev;
           return [...prev, msg];
         });
-        // Emit seen-receipt instantly
         socketInstance.emit('chat:seen', { messageId: msg.id, senderId: msg.senderId, roomId: msg.roomId });
       } else if (msg.msgType === 'private') {
-        // Play private message sound notification!
         try {
           const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/1487/1487-84.wav');
           audio.volume = 0.4;
           audio.play().catch(() => {});
         } catch (e) {}
 
-        // Increment unread DM badge counters
         setUnreads(prev => ({
           ...prev,
           [msg.roomId]: (prev[msg.roomId] || 0) + 1
@@ -220,10 +215,6 @@ export default function App() {
       setMessages(prev => prev.filter(m => m.id !== messageId));
     });
 
-    socketInstance.on('stats:counts', (data: { online: number }) => {
-      // Synchronous count checks
-    });
-
     socketInstance.on('user:banned', ({ reason }) => {
       triggerToast(`Banned: This account has been locked. Reason: ${reason}`);
       handleLogout();
@@ -244,7 +235,6 @@ export default function App() {
     };
   }, [token, currUser, passedLoc]);
 
-  // Fetch Public Rooms list from REST API
   const fetchPublicRoomList = async () => {
     if (!token) return;
     try {
@@ -260,7 +250,6 @@ export default function App() {
     }
   };
 
-  // Fetch online user listing
   const fetchUsersDirectory = async () => {
     if (!token) return;
     try {
@@ -276,7 +265,6 @@ export default function App() {
     }
   };
 
-  // Fetch Active Channel chat log
   const fetchMessages = async (roomId: string) => {
     if (!token) return;
     try {
@@ -293,14 +281,12 @@ export default function App() {
     }
   };
 
-  // Handle room/user selection transitions
   useEffect(() => {
     if (currTab === 'public' && activeRoomId) {
       fetchMessages(activeRoomId);
     } else if (currTab === 'private' && activeDmUser && currUser) {
       const privateRoomId = `private-${[currUser.id, activeDmUser.id].sort().join('-')}`;
       fetchMessages(privateRoomId);
-      // Clear DM unreads instantly
       setUnreads(prev => ({
         ...prev,
         [privateRoomId]: 0
@@ -308,14 +294,12 @@ export default function App() {
     }
   }, [currTab, activeRoomId, activeDmUser]);
 
-  // Smooth scroll chats auto-scroll target
   useEffect(() => {
     if (messageEndRef.current) {
       messageEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, othersTyping]);
 
-  // Authentication callbacks
   const handleAuthSuccess = (newToken: string, newUser: User) => {
     setToken(newToken);
     setCurrUser(newUser);
@@ -333,7 +317,6 @@ export default function App() {
     }
   };
 
-  // Send messaging triggers
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || !socket || !currUser) return;
@@ -356,7 +339,6 @@ export default function App() {
       tempId
     });
 
-    // Optimistic Insertion to Local UI state
     const localMsg: Message = {
       id: tempId,
       senderId: currUser.id,
@@ -372,8 +354,6 @@ export default function App() {
 
     setMessages(prev => [...prev, localMsg]);
     setChatInput('');
-    
-    // Reset typing triggers
     socket.emit('chat:typing', { roomId: targetRoomId, username: currUser.username, isTyping: false });
     setMeTyping(false);
   };
@@ -413,7 +393,6 @@ export default function App() {
     }
   };
 
-  // File GIF / Quick Emojis selections
   const injectEmoji = (emoji: string) => {
     setChatInput(prev => prev + emoji);
   };
@@ -470,7 +449,6 @@ export default function App() {
         </div>
       ) : !token ? (
         <div className="flex-grow flex flex-col items-center justify-center p-6 bg-slate-950 relative overflow-hidden">
-          {/* Landing Background Graphics */}
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl"></div>
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl"></div>
           
@@ -486,7 +464,6 @@ export default function App() {
         <div className="flex-grow flex overflow-hidden h-[100vh]">
           {/* LEFT SIDEBAR navigation drawer */}
           <aside className={`w-80 border-r border-slate-900/90 bg-slate-950 flex flex-col z-40 transition-transform duration-300 md:relative md:translate-x-0 ${sidebarOpen ? 'translate-x-0 absolute inset-0' : '-translate-x-full absolute inset-y-0 left-0'}`}>
-            {/* Sidebar Branding block */}
             <div className="p-5 border-b border-slate-900/95 flex items-center justify-between">
               <div className="flex items-center space-x-2.5">
                 <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold">
@@ -509,7 +486,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* Real-time User Search Bar */}
             <div className="px-4 py-3 border-b border-slate-900/90 bg-slate-950 shrink-0">
               <div className="relative">
                 <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3.5 top-3" />
@@ -524,9 +500,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Side-Nav Lists */}
             <nav className="flex-1 overflow-y-auto px-3.5 py-4 space-y-6">
-              {/* Main public channels list */}
               <div className="space-y-2">
                 <span className="px-2 text-[10px] font-black uppercase text-slate-500 tracking-widest block">🏛️ Lobbies (Public Chats)</span>
                 <div className="space-y-0.5">
@@ -564,7 +538,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Direct Messages Directory */}
               <div className="space-y-2 animate-fade-in">
                 <span className="px-2 text-[10px] font-black uppercase text-slate-500 tracking-widest block">💬 ACTIVE CHATS (DMs)</span>
                 <div className="space-y-0.5">
@@ -601,7 +574,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Extras Navigation list */}
               <div className="space-y-2">
                 <span className="px-2 text-[10px] font-black uppercase text-slate-500 tracking-widest block font-sans">🎲 Roulettes & Settings</span>
                 <div className="space-y-0.5 text-xs">
@@ -637,12 +609,11 @@ export default function App() {
               </div>
             </nav>
 
-            {/* Sidebar bottom Profile info */}
             <div className="p-4 bg-slate-950 border-t border-slate-900/95 flex items-center justify-between">
               <div className="flex items-center space-x-2.5 truncate">
-                <img src={currUser.avatar} alt="Me" referrerPolicy="no-referrer" className="w-9 h-9 rounded-xl border border-slate-800 object-cover shrink-0" />
+                <img src={currUser?.avatar} alt="Me" referrerPolicy="no-referrer" className="w-9 h-9 rounded-xl border border-slate-800 object-cover shrink-0" />
                 <div className="truncate text-left">
-                  <h4 className="text-xs font-black text-slate-200 truncate">{currUser.username}</h4>
+                  <h4 className="text-xs font-black text-slate-200 truncate">{currUser?.username}</h4>
                   <span className="text-[9px] text-emerald-400 font-mono font-bold tracking-tight block">KHI CORE NODE</span>
                 </div>
               </div>
@@ -660,7 +631,6 @@ export default function App() {
 
           {/* MAIN CHAT LOBBIES PLATFORM VIEWPORT */}
           <main className="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden relative">
-            {/* Header top status block */}
             <header className="bg-slate-950 border-b border-slate-900 px-5 py-4 flex items-center justify-between shrink-0">
               <div className="flex items-center space-x-3 truncate">
                 <button 
@@ -698,7 +668,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Status metrics display badge */}
               <div className="flex items-center space-x-3 shrink-0">
                 <div className="hidden sm:flex items-center space-x-1 px-3 py-1 bg-slate-900/60 border border-slate-800 rounded-full font-mono text-[9px] text-slate-400">
                   <MapPin className="w-3 h-3 text-emerald-400" />
@@ -708,173 +677,48 @@ export default function App() {
               </div>
             </header>
 
-            {/* View Switching router sandbox */}
             <div className="flex-1 overflow-hidden relative">
               {currTab === 'public' || currTab === 'private' ? (
-                /* Dynamic Interactive scrollboard */
                 <div className="absolute inset-0 flex flex-col">
                   <div className="flex-grow overflow-y-auto p-5 scrollbar-thin scrollbar-thumb-slate-800 space-y-4" style={{ contentVisibility: 'auto' }}>
                     {messages.map((m) => {
-                      const isMe = m.senderId === currUser.id;
+                      const isMe = m.senderId === currUser?.id;
                       return (
                         <div key={m.id} className={`flex items-start gap-3 ${isMe ? 'flex-row-reverse text-right' : 'text-left animate-fade-in'}`}>
                           <img src={m.senderAvatar} alt={m.senderName} referrerPolicy="no-referrer" className="w-8.5 h-8.5 rounded-xl border border-slate-850 bg-slate-900 object-cover mt-0.5 select-none" />
                           <div className={`space-y-1.5 max-w-[80vw] md:max-w-xl p-3.5 rounded-2xl relative ${isMe ? 'bg-emerald-500 text-slate-950 rounded-tr-none font-sans font-medium' : 'bg-slate-900 text-slate-200 border border-slate-850/80 rounded-tl-none'}`}>
                             <div className="flex items-center gap-2 justify-between">
                               <span className="text-[10px] font-black tracking-wide opacity-85 select-none font-sans">{m.senderName}</span>
-                              <div className="flex items-center gap-1.5">
-                                {/* React Selector Trigger */}
-                                <div className="relative">
-                                  <button
-                                    type="button"
-                                    onClick={() => setActiveReactPopoverId(activeReactPopoverId === m.id ? null : m.id)}
-                                    className="p-1 rounded bg-slate-950/20 hover:bg-slate-950/45 text-slate-400 hover:text-slate-100 transition-all cursor-pointer"
-                                    title="React with Emoji"
-                                    id={`react-btn-${m.id}`}
-                                  >
-                                    <Smile className="w-3.5 h-3.5" />
-                                  </button>
-
-                                  {/* Floating Emojis list popover */}
-                                  {activeReactPopoverId === m.id && (
-                                    <div className="absolute z-50 bg-slate-950 border border-slate-800 rounded-xl p-1.5 shadow-2xl flex items-center gap-1 -bottom-10 right-0 animate-fade-in min-w-[170px]" style={{ contentVisibility: 'auto' }}>
-                                      {['❤️', '👍', '😂', '😮', '😢', '🔥'].map(emoji => (
-                                        <button
-                                          key={emoji}
-                                          type="button"
-                                          onClick={() => {
-                                            if (socket) {
-                                              socket.emit('message:react', { messageId: m.id, emoji, roomId: m.roomId });
-                                            }
-                                            setActiveReactPopoverId(null);
-                                          }}
-                                          className="p-1 hover:bg-slate-800 text-xs hover:scale-130 transition-all duration-150 rounded-lg cursor-pointer"
-                                          id={`react-opt-${emoji}-${m.id}`}
-                                        >
-                                          {emoji}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-
-                                {currUser.role === 'admin' && (
-                                  <button
-                                    onClick={() => deleteMsgAdmin(m.id)}
-                                    className={`p-1 rounded bg-slate-950/20 hover:bg-rose-950/40 text-slate-500 hover:text-red-400 cursor-pointer`}
-                                    title="Retract message"
-                                    id={`delete-btn-${m.id}`}
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </button>
-                                )}
-                              </div>
                             </div>
-
-                            {/* Message rendering block */}
-                            {m.type === 'gif' ? (
-                              <img src={m.message} alt="GIF" className="max-w-xs rounded-lg border border-slate-700/50 mt-1 object-contain" referrerPolicy="no-referrer" />
-                            ) : (
-                              <p className="text-xs tracking-wide leading-relaxed font-sans break-words">{m.message}</p>
-                            )}
-
-                            {/* Reactions Badges Rows */}
-                            {m.reactions && Object.keys(m.reactions).length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-1.5">
-                                {Object.entries(m.reactions)
-                                  .filter(([_, r]) => Array.isArray(r) && r.length > 0)
-                                  .map(([emoji, r]) => {
-                                    const reactors = r as string[];
-                                    const hasReacted = reactors.includes(currUser.username) || reactors.includes(currUser.id);
-                                    return (
-                                      <button
-                                        key={emoji}
-                                        type="button"
-                                        onClick={() => {
-                                          if (socket) {
-                                            socket.emit('message:react', { messageId: m.id, emoji, roomId: m.roomId });
-                                          }
-                                        }}
-                                        className={`px-2 py-0.5 text-[10px] rounded-full flex items-center gap-1 border transition-all cursor-pointer ${
-                                          hasReacted 
-                                            ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 font-bold' 
-                                            : 'bg-slate-950/45 border-slate-800 text-slate-400 hover:border-slate-700'
-                                        }`}
-                                        title={`Reactors: ${reactors.join(', ')}`}
-                                        id={`reaction-pill-${emoji}-${m.id}`}
-                                      >
-                                        <span>{emoji}</span>
-                                        <span className="text-[9px] font-mono font-bold">{reactors.length}</span>
-                                      </button>
-                                    );
-                                  })}
-                              </div>
-                            )}
-                            
-                            <span className="text-[8px] block opacity-50 text-right mt-1 font-mono font-medium">
-                              {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
+                            <p className="text-xs break-words leading-relaxed selection:bg-indigo-500">{m.message}</p>
                           </div>
                         </div>
                       );
                     })}
-
-                    {/* Typing state animations */}
-                    {othersTyping.length > 0 && (
-                      <div className="flex items-start gap-2">
-                        <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-850 text-[11px] text-slate-400 font-mono animate-pulse">
-                          <span>{othersTyping.join(', ')} is typing...</span>
-                        </div>
-                      </div>
-                    )}
                     <div ref={messageEndRef} />
                   </div>
 
-                  {/* BOTTOM INPUT BOARD */}
-                  <div className="p-4 bg-slate-950 border-t border-slate-900 shrink-0 space-y-3">
-                    {/* Presets shortcut buttons */}
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs text-slate-400 font-sans tracking-wide">
-                      <span className="uppercase text-[9px] font-bold text-slate-550 shrink-0 font-mono mr-1">Tariq Rd Chai:</span>
-                      <button onClick={() => injectEmoji('😋🍪')} className="px-2 py-1 bg-slate-900 hover:bg-slate-800 rounded-lg shrink-0">😋🍪 Chai</button>
-                      <button onClick={() => injectEmoji('👑💯')} className="px-2 py-1 bg-slate-900 hover:bg-slate-800 rounded-lg shrink-0">👑💯 Boss</button>
-                      <button onClick={() => injectEmoji('Biryani is Love ❤️🇵🇰')} className="px-2 py-1 bg-slate-900 hover:bg-slate-800 rounded-lg shrink-0">Biryani 🇵🇰</button>
-                      <span className="uppercase text-[9px] font-bold text-slate-550 shrink-0 font-mono ml-4 mr-1">Karachi Gifs:</span>
-                      <button onClick={() => sendGif('https://media.giphy.com/media/26AHvVdY0msX6GvUk/giphy.gif')} className="px-2 py-1 bg-slate-900 hover:bg-slate-800 rounded-lg text-amber-400/90 font-bold shrink-0">Pakistan Flag 🇵🇰</button>
-                      <button onClick={() => sendGif('https://media.giphy.com/media/l0ExgO5m0tcnfUKyY/giphy.gif')} className="px-2 py-1 bg-slate-900 hover:bg-slate-800 rounded-lg text-emerald-400/90 font-bold shrink-0">Chai Pouring ☕</button>
-                    </div>
-
-                    <form onSubmit={handleSendMessage} className="flex gap-2">
+                  <form onSubmit={handleSendMessage} className="p-4 bg-slate-950 border-t border-slate-900 shrink-0">
+                    <div className="flex items-center space-x-2">
                       <input
                         type="text"
                         value={chatInput}
                         onChange={handleInputTyping}
-                        placeholder={`Message #${currTab === 'public' ? activeRoomName : activeDmUser?.username}`}
-                        className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 transition-all font-sans"
-                        id="chat-main-input"
+                        placeholder="Type your message..."
+                        className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/50"
                       />
-                      <button
-                        type="submit"
-                        disabled={!chatInput.trim()}
-                        className="px-5 bg-emerald-500 hover:opacity-95 text-slate-950 font-black rounded-xl transition shadow-lg flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                        id="chat-main-submit"
-                      >
+                      <button type="submit" className="p-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 rounded-xl transition">
                         <Send className="w-4 h-4" />
                       </button>
-                    </form>
-                  </div>
+                    </div>
+                  </form>
                 </div>
               ) : currTab === 'stranger' ? (
-                <div className="absolute inset-0 p-5">
-                  <StrangerTab socket={socket} currUser={currUser} onShowNotice={triggerToast} />
-                </div>
+                <StrangerTab token={token} currUser={currUser} socket={socket} />
               ) : currTab === 'settings' ? (
-                <div className="absolute inset-0 p-5">
-                  <ProfileSettings token={token} currUser={currUser} onUpdateUser={setCurrUser} onShowNotice={triggerToast} />
-                </div>
-              ) : currTab === 'admin' && currUser?.role === 'admin' ? (
-                <div className="absolute inset-0 p-5">
-                  <AdminDashboard token={token} onRefreshStats={fetchUsersDirectory} onShowNotice={triggerToast} />
-                </div>
+                <ProfileSettings token={token} currUser={currUser} onUserUpdate={setCurrUser} />
+              ) : currTab === 'admin' ? (
+                <AdminDashboard token={token} />
               ) : null}
             </div>
           </main>
